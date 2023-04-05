@@ -1,11 +1,10 @@
 import numpy as np
 import sys
 import atheris
-from sklearn.svm import LinearSVR as lsvr
 from sklearn.datasets import make_classification, make_blobs
 from sklearn.model_selection import train_test_split
-from concrete.ml.sklearn.svm import LinearSVR as c_lsvr
-
+from sklearn.tree import DecisionTreeRegressor as dtr
+from concrete.ml.sklearn import DecisionTreeRegressor as c_dtr
 
 # Dataset to train
 X, y = make_classification(n_samples=5, n_features=5, random_state=0)
@@ -15,10 +14,10 @@ X, y = make_classification(n_samples=5, n_features=5, random_state=0)
 input_train, _, result_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Start the scikit linearsvr model
-scikit_model = lsvr()
+scikit_model = dtr()
 
 # Start the concrete-ml linearsvr model
-concrete_model = c_lsvr()
+concrete_model = c_dtr()
 
 # Train the models
 concrete_model.fit(input_train, result_train)
@@ -38,6 +37,6 @@ def compare_models(input_bytes):
     
     # Compare both outputs
     assert np.allclose(fhe_pred, prediction, atol=3), f"Error: The predictions are different, scikit prediction {prediction}; concrete prediction {fhe_pred}"
-   
+    
 atheris.Setup(sys.argv, compare_models)
 atheris.Fuzz()
