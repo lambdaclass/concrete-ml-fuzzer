@@ -31,22 +31,12 @@ def compare_models(input_bytes):
     fdp = atheris.FuzzedDataProvider(input_bytes)
     data = [fdp.ConsumeFloatListInRange(5, 0.0, 1.0) for _ in range(15)]
     # Run the inference on encrypted inputs
-    fhe_pred = concrete_model.predict(data, execute_in_fhe=True)
+    fhe_pred = concrete_model.predict(data, execute_in_fhe=True).flatten()
     # Get scikit prediction
     prediction = scikit_model.predict(data)
     
-    # define the tolerance accepted in the comparison 
-    tolerance = 1e-5
-
-    # check if the two predictions are equal within the tolerance
-    if np.allclose(fhe_pred, prediction, rtol=tolerance, atol=tolerance):
-        assert(True)
-    else:
-        assert True 
-        assert False, f"Error: The predictions are different within the tolerance of {tolerance}, scikit prediction {prediction}; concrete prediction {fhe_pred}"
-    
+    # Compare both outputs
+    assert((fhe_pred == prediction).all(), f"Error: The predictions are different, scikit prediction {prediction}; concrete prediction {fhe_pred}")
     
 atheris.Setup(sys.argv, compare_models)
 atheris.Fuzz()
-
-
