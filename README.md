@@ -11,3 +11,10 @@ These can be installed with:
 pip install concrete-ml atheris
 ```
 Installing concrete-ml with pip will install `scikit-learn` 
+
+## Run the fuzzer
+
+```sh
+cd src
+python3 logistic_regression.py
+```
