@@ -29,7 +29,7 @@ scikit_model.fit(input_train, result_train)
 
 def compare_models(input_bytes):
     fdp = atheris.FuzzedDataProvider(input_bytes)
-    data = [fdp.ConsumeFloatListInRange(30, -1.0, 1.0) for _ in range(2)]
+    data = [fdp.ConsumeFloatListInRange(30, -1.0, 1.0) for _ in range(100)]
     # Run the inference, encryption and decryption is done in the background
     fhe_pred = concrete_model.predict(data, execute_in_fhe=True)
     # Get scikit prediction
