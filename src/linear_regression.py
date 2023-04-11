@@ -5,7 +5,7 @@ from sklearn.linear_model import LinearRegression as SklearnLinearRegression
 from concrete.ml.sklearn import LinearRegression as ConcreteLinearRegression
 
 # Dataset to train
-input_train, resukt_train, _ = make_regression(n_samples=100, n_features=5, random_state=42)
+input_train, result_train, _ = make_regression(n_samples=100, n_features=5, random_state=42)
 
 # Start the concrete-ml linear regression model, train (unencrypted data) and quantize the weights.
 concrete_model = ConcreteLinearRegression()
