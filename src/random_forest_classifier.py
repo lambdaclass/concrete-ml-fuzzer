@@ -12,6 +12,7 @@ sklearn_model = SklearnRandomForest(n_estimators=10, max_depth=None,
 
 concrete_model = ConcreteRandomForest(n_estimators=10, max_depth=None,
     min_samples_split=2, random_state=42).fit(train_x, train_y)
+concrete_model.compile(train_x)
 
 def compare_models(input_bytes):
     fdp = atheris.FuzzedDataProvider(input_bytes)
