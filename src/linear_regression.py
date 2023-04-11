@@ -6,7 +6,6 @@ from concrete.ml.sklearn import LinearRegression as ConcreteLinearRegression
 
 # Regression train set
 input_train, result_train = make_regression(n_samples=100, n_features=5, random_state=42)
-print(input_train)
 
 concrete_model = ConcreteLinearRegression().fit(input_train, result_train)
 concrete_model.compile(input_train)
