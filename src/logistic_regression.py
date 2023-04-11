@@ -15,7 +15,7 @@ input_train, _, result_train, _ = train_test_split(
 )
 
 # Start the concrete-ml logistic regression model, train (unencrypted data) and quantize the weights.
-concrete_model = ConcreteLogisticRegression()
+concrete_model = ConcreteLogisticRegression(n_bits=12)
 concrete_model.fit(input_train, result_train)
 
 # Compile FHE
