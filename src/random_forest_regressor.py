@@ -1,8 +1,8 @@
 import sys 
 import atheris
 from sklearn.datasets import make_blobs
-from sklearn.ensemble import RandomForestClassifier as SklearnRandomForest
-from concrete.ml.sklearn.rf import RandomForestClassifier as ConcreteRandomForest
+from sklearn.ensemble import RandomForestRegressor as SklearnRandomForest
+from concrete.ml.sklearn.rf import RandomForestRegressor as ConcreteRandomForest
 
 train_x, train_y = make_blobs(n_samples=1000, n_features=10, centers=100,
     random_state=42)
