@@ -7,7 +7,12 @@ from concrete.ml.sklearn import NeuralNetClassifier as ConcreteNN
 
 train_input, train_result = make_classification(n_samples=100, class_sep=2, n_features=5, random_state=42)
 
-concrete_model = ConcreteNN().fit(train_input, train_result)
+params = {
+    "module__input_dim": 1,
+    "module__activation_function": nn.Sigmoid,
+}
+
+concrete_model = ConcreteNN(**params).fit(train_input, train_result)
 
 concrete_model.compile()
 
