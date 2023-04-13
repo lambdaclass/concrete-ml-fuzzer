@@ -1,4 +1,5 @@
 import sys
+import numpy
 import atheris
 from sklearn.datasets import make_regression
 from concrete.ml.sklearn import LinearRegression
@@ -16,11 +17,11 @@ def compare_models(input_bytes):
     # Get scikit prediction
     prediction = scikit_model.predict(data)
 
-    # Get the mean percentage error to make sure the accuaracy is around 99%
-    mean_per_err = 100 - abs(sum([ 1 - f / a  for a, f in zip(prediction, fhe_pred)]))
+    # Get the mean absolute percentage error(mape) to make sure the accuaracy is around 99%
+    mape = numpy.mean(numpy.abs((prediction - fhe_pred) / prediction))
 
     # Compare outputs
-    assert(mean_per_err > 99.0)
+    assert(mape < 1.0)
 
 atheris.Setup(sys.argv, compare_models)
 atheris.Fuzz()
