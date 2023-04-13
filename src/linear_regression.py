@@ -8,9 +8,6 @@ input_train, result_train = make_regression(n_samples=100, n_features=5, random_
 concrete_model, scikit_model = LinearRegression(n_bits=12).fit_benchmark(input_train, result_train)
 concrete_model.compile(input_train)
 
-prediction = scikit_model.predict(data)
-fhe_pred = concrete_model.predict(data, execute_in_fhe=True).flatten()
-
 def compare_models(input_bytes):
     fdp = atheris.FuzzedDataProvider(input_bytes)
     data = [fdp.ConsumeFloatListInRange(5, -1.5, 4.0) for _ in range(100)]
