@@ -12,11 +12,11 @@ concrete_model.compile(train_x)
 
 def compare_models(input_bytes):
     fdp = atheris.FuzzedDataProvider(input_bytes)
-    data = [fdp.ConsumeFloatListInRange(1000, -13.0, 13.0) for _ in range(100)]
+    data = [fdp.ConsumeFloatListInRange(10, -13.0, 13.0) for _ in range(100)]
     # Run the inference, encryption and decryption is done in the background
-    fhe_pred = concrete_model.predict(data, execute_in_fhe=True)
+    fhe_pred = concrete_model.predict(data, execute_in_fhe=True).flatten()
     # Get scikit prediction
-    sk_pred = scikit_model.predict(data)
+    sk_pred = sklearn_model.predict(data)
 
     # Get the mean absolute percentage error(mape) to make sure the accuaracy is around 99%
     mape = numpy.mean(numpy.abs((sk_pred - fhe_pred) / sk_pred))
