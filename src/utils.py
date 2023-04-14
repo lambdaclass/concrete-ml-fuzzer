@@ -1,7 +1,8 @@
 import atheris
+import numpy as np
 from sklearn.datasets import load_iris, load_diabetes
 
-def _classification_training() -> training_x, training_y, data_info:
+def _classification_training() -> (np.array, np.array, dict):
     """
     Create a classification training set
     """
@@ -14,7 +15,7 @@ def _classification_training() -> training_x, training_y, data_info:
 
     return (training_x, training_y, data_info)
 
-def _regression_training() -> training_x, training_y, data_info:
+def _regression_training() -> (np.array, np.array, dict):
     """
     Create a regression training set
     """
