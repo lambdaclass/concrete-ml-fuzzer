@@ -1,9 +1,7 @@
 import atheris
 import numpy as np
-from sklearn.datasets import load_iris, load_diabetes
 from sklearn.base import is_classifier
-from sklearn.datasets import load_iris
-
+from sklearn.datasets import load_iris, load_diabetes
 
 def _classification_training() -> (np.array, np.array, dict):
     """
@@ -55,9 +53,8 @@ def mean_absolute_percentage_error(y_sklearn, y_fhe) -> float:
     Values fall in the (0, 100) range, lower values represent less deviation.
     """
     
-     # Compute accuracy for each possible representation
+    # Compute accuracy for each possible representation
     score = np.abs((y_sklearn - y_fhe) / y_sklearn)
-
 
     return np.mean(score)
 
@@ -67,10 +64,7 @@ def initialize_models(ModelClass, *params):
     Initialize concrete and sklearn models. Automatically load iris or diabetes dataset
     """
     
-    if is_classifier(ModelClass): 
-        X, y, data_info = _classification_training()
-    else: 
-        X, y, data_info = _regression_training()
+    X, y, data_info = _classification_training() if is_classifier(ModelClass) else _regression_training()
     
     model = ModelClass(n_bits=11, *params)
     concrete_model, sklearn_model = model.fit_benchmark(X, y)
