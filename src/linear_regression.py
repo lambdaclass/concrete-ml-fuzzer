@@ -2,28 +2,19 @@ import sys
 import atheris
 from sklearn.datasets import make_regression
 from concrete.ml.sklearn import LinearRegression
-# Regression train set
-input_train, result_train = make_regression(n_samples=100, n_features=5, random_state=42)
+from utils import initialize_models, mean_absolute_percentage_error, consume_bytes
 
-concrete_model, scikit_model = LinearRegression(n_bits=12).fit_benchmark(input_train, result_train)
-concrete_model.compile(input_train)
-
-prediction = scikit_model.predict(data)
-fhe_pred = concrete_model.predict(data, execute_in_fhe=True).flatten()
+concrete_model, scikit_model, data_info = initialize_models(LinearRegression, n_bits=12)
 
 def compare_models(input_bytes):
-    fdp = atheris.FuzzedDataProvider(input_bytes)
-    data = [fdp.ConsumeFloatListInRange(5, -1.5, 4.0) for _ in range(100)]
+    data = consume_bytes(input_bytes, data_info, margin=0.1)
     # Run the inference, encryption and decryption is done in the background
     fhe_pred = concrete_model.predict(data, execute_in_fhe=True).flatten()
     # Get scikit prediction
     prediction = scikit_model.predict(data)
 
     # Get the mean percentage error to make sure the accuaracy is around 99%
-    mean_per_err = 100 - abs(sum([ 1 - f / a  for a, f in zip(prediction, fhe_pred)]))
-
-    # Compare outputs
-    assert(mean_per_err > 99.0)
+    assert(mean_absolute_percentage_error(prediction, fhe_pred) < 1)
 
 atheris.Setup(sys.argv, compare_models)
 atheris.Fuzz()
