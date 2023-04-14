@@ -1,16 +1,31 @@
 import atheris
+from sklearn.datasets import load_iris, load_diabetes
 
-def _classification_training() -> data, restult, data_info:
+def _classification_training() -> training_x, training_y, data_info:
     """
     Create a classification training set
     """
-    return
+    training_x, training_y = load_iris(return_X_y=True)
+    data_info = {
+        "dimensions": 4,
+        "min_feature": min([ min(minimum) for minimum in training_x]),
+        "max_feature": max([ max(maximum) for maximum in training_x]),
+    }
 
-def _regression_training():
+    return (training_x, training_y, data_info)
+
+def _regression_training() -> training_x, training_y, data_info:
     """
     Create a regression training set
     """
-    return
+    training_x, training_y = load_diabetes(return_X_y=True)
+    data_info = {
+        "dimensions": 10,
+        "min_feature": min([ min(minimum) for minimum in training_x]),
+        "max_feature": max([ max(maximum) for maximum in training_x]),
+    }
+
+    return (training_x, training_y, data_info)
 
 def initialize_models(Model: ModelClass, *params) -> (model, model, data_info):
     """
