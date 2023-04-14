@@ -1,4 +1,5 @@
 import sys
+import numpy
 import atheris
 from sklearn.datasets import make_regression
 from concrete.ml.sklearn import LinearRegression
