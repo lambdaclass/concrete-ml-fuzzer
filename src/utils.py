@@ -23,8 +23,8 @@ def _regression_training() -> (np.array, np.array, dict):
     training_x, training_y = make_regression(n_samples=100, n_features=5, random_state=42)
     data_info = {
         "dimensions": 5,
-        "min_feature": min([ min(minimum) for minimum in training_x]),
-        "max_feature": max([ max(maximum) for maximum in training_x]),
+        "min_feature": min(min(minimum) for minimum in training_x),
+        "max_feature": max(max(maximum) for maximum in training_x),
     }
 
     return (training_x, training_y, data_info)
