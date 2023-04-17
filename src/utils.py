@@ -47,14 +47,14 @@ def consume_bytes(input_bytes: bytes, data_info, n_samples=1000, margin=0.1) -> 
            ]
     return data
 
-def mean_absolute_percentage_error(y_sklearn, y_fhe) -> float:
+def mean_absolute_percentage_error(y_sklearn, y_FHE) -> float:
     """
-    Calculate the mean absolute percentage error to determine how much the fhe model deviates from the sklearn model.
+    Calculate the mean absolute percentage error to determine how much the FHE model deviates from the sklearn model.
     Values fall in the (0, 100) range, lower values represent less deviation.
     """
     
     # Compute accuracy for each possible representation
-    score = np.abs((y_sklearn - y_fhe) / y_sklearn)
+    score = np.abs((y_sklearn - y_FHE) / y_sklearn)
 
     return np.mean(score)
 
