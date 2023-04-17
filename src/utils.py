@@ -59,14 +59,16 @@ def mean_absolute_percentage_error(y_sklearn, y_fhe) -> float:
     return np.mean(score)
 
 
-def initialize_models(ModelClass, *params):
+def initialize_models(ModelClass, n_bits=12, *params):
     """
     Initialize concrete and sklearn models. Automatically load iris or diabetes dataset
     """
     
     X, y, data_info = _classification_training() if is_classifier(ModelClass) else _regression_training()
     
-    model = ModelClass(n_bits=11, *params)
+    # The n_bits parameter represents the number of bits used for the model quantization. 
+    # Bigger numbers achieve a higher accuracy at the cost of speed. The maximum possible value (v1.0.0) is 12. 
+    model = ModelClass(n_bits=n_bits, *params)
     concrete_model, sklearn_model = model.fit_benchmark(X, y)
     concrete_model.compile(X)
     return concrete_model, sklearn_model, data_info
