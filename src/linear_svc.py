@@ -3,7 +3,7 @@ import atheris
 from concrete.ml.sklearn import LinearSVC
 from utils import initialize_models, mean_absolute_percentage_error, consume_bytes
 
-concrete_model, scikit_model, data_info = initialize_models(LinearSVC, {"n_bits":12})
+concrete_model, scikit_model, data_info = initialize_models(LinearSVC)
 
 def compare_models(input_bytes):
     data = consume_bytes(input_bytes, data_info)
