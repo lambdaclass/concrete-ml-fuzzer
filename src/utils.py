@@ -59,7 +59,7 @@ def mean_absolute_percentage_error(y_sklearn, y_FHE) -> float:
     return np.mean(score)
 
 
-def initialize_models(ModelClass, params):
+def initialize_models(ModelClass, params={"n_bits":12}):
     """
     Initialize concrete and sklearn models. Automatically load iris or diabetes dataset
     """
