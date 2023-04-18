@@ -8,7 +8,7 @@ concrete_model, scikit_model, data_info = initialize_models(LinearSVC, {"n_bits"
 def compare_models(input_bytes):
     data = consume_bytes(input_bytes, data_info)
     # Run the inference, encryption and decryption is done in the background
-    FHE_pred = concrete_model.predict(data, execute_in_FHE=True)
+    FHE_pred = concrete_model.predict(data, execute_in_fhe=True)
     # Get scikit prediction
     prediction = scikit_model.predict(data)
 
