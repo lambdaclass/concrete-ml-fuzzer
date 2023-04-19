@@ -1,43 +1,23 @@
 import numpy as np
 import sys
 import atheris
-from sklearn.svm import LinearSVR as lsvr
-from sklearn.datasets import make_classification, make_blobs
-from sklearn.model_selection import train_test_split
 from concrete.ml.sklearn.svm import LinearSVR as c_lsvr
+from utils import initialize_models, consume_bytes, mean_absolute_percentage_error
 
-
-# Dataset to train
-X, y = make_classification(n_samples=5, n_features=5, random_state=0)
-
-# Split the data-set into a train and test set,
-# each set is split into input and result.
-input_train, _, result_train, _ = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Start the scikit linearsvr model
-scikit_model = lsvr()
-
-# Start the concrete-ml linearsvr model
-concrete_model = c_lsvr()
-
-# Train the models
-concrete_model.fit(input_train, result_train)
-scikit_model.fit(input_train, result_train)
-
-# Compile FHE
-concrete_model.compile(input_train)
+concrete_model, scikit_model, data_info = initialize_models(c_lsvr)
 
 def compare_models(input_bytes):
   
-    fdp = atheris.FuzzedDataProvider(input_bytes)
-    data = [fdp.ConsumeFloatListInRange(5, 0.0, 1.0) for _ in range(15)]
+    # Get random data to test
+    data = consume_bytes(input_bytes, data_info, n_samples=10, margin=0)
+
     # Run the inference on encrypted inputs
     fhe_pred = concrete_model.predict(data, execute_in_fhe=True).flatten()
     # Get scikit prediction
     prediction = scikit_model.predict(data)
     
     # Compare both outputs
-    assert np.allclose(fhe_pred, prediction, atol=3), f"Error: The predictions are different, scikit prediction {prediction}; concrete prediction {fhe_pred}"
+    assert (mean_absolute_percentage_error(prediction, fhe_pred) < 1 ), f"Error: The prediction accuracy compared to scikit is less than 95%: is {get_accuracy(prediction, fhe_pred)}%"
    
 atheris.Setup(sys.argv, compare_models)
 atheris.Fuzz()

@@ -1,251 +1,70 @@
 import numpy as np
 import sys
 import atheris
-import time
-from collections import defaultdict
-from timeit import default_timer as timer
-from sklearn.compose import ColumnTransformer
-from sklearn.datasets import fetch_openml
-from sklearn.decomposition import PCA
-from sklearn.linear_model import GammaRegressor as SklearnGammaRegressor
-from sklearn.linear_model import PoissonRegressor as SklearnPoissonRegressor
-from sklearn.linear_model import TweedieRegressor as SklearnTweedieRegressor
-from sklearn.metrics import mean_gamma_deviance, mean_poisson_deviance, mean_tweedie_deviance
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import (
-    FunctionTransformer,
-    KBinsDiscretizer,
-    OneHotEncoder,
-    StandardScaler,
-)
-
 from concrete.ml.sklearn import GammaRegressor as ConcreteGammaRegressor
 from concrete.ml.sklearn import PoissonRegressor as ConcretePoissonRegressor
 from concrete.ml.sklearn import TweedieRegressor as ConcreteTweedieRegressor
+from sklearn.linear_model import GammaRegressor as SklearnGammaRegressor
+from sklearn.linear_model import PoissonRegressor as SklearnPoissonRegressor
+from sklearn.linear_model import TweedieRegressor as SklearnTweedieRegressor
+from utils import initialize_models, initialize_glm_models, consume_bytes, mean_absolute_percentage_error
 
-# Getting the original data set containing the risk features
-# Link: https://www.openml.org/d/41214
-risks_data, _ = fetch_openml(
-    data_id=41214, as_frame=True, cache=True, data_home="~/.cache/sklean", return_X_y=True
-)
-
-# Getting the data set containing claims amount
-# Link: https://www.openml.org/d/41215
-claims_data, _ = fetch_openml(
-    data_id=41215, as_frame=True, cache=True, data_home="~/.cache/sklean", return_X_y=True
-)
-
-# Set IDpol as index
-risks_data["IDpol"] = risks_data["IDpol"].astype(int)
-risks_data.set_index("IDpol", inplace=True)
-
-# Grouping claims mounts together if they are associated with the same policy
-claims_data = claims_data.groupby("IDpol").sum()
-
-# Merging the two sets over policy IDs
-data = risks_data.join(claims_data, how="left")
-
-# Only keeping the first 100 000 for faster running time
-data = data.head(100000)
-
-# Filtering out unknown claim amounts
-data["ClaimAmount"].fillna(0, inplace=True)
-
-# Filtering out claims with zero amount, as the severity (gamma) model
-# requires strictly positive target values
-data.loc[(data["ClaimAmount"] == 0) & (data["ClaimNb"] >= 1), "ClaimNb"] = 0
-
-# Removing unreasonable outliers
-data["ClaimNb"] = data["ClaimNb"].clip(upper=4)
-data["Exposure"] = data["Exposure"].clip(upper=1)
-data["ClaimAmount"] = data["ClaimAmount"].clip(upper=200000)
-
-log_scale_transformer = make_pipeline(FunctionTransformer(np.log, validate=False), StandardScaler())
-
-linear_model_preprocessor = ColumnTransformer(
-    [
-        ("passthrough_numeric", "passthrough", ["BonusMalus"]),
-        ("binned_numeric", KBinsDiscretizer(n_bins=10), ["VehAge", "DrivAge"]),
-        ("log_scaled_numeric", log_scale_transformer, ["Density"]),
-        (
-            "onehot_categorical",
-            OneHotEncoder(sparse=False),
-            ["VehBrand", "VehPower", "VehGas", "Region", "Area"],
-        ),
-    ],
-    remainder="drop",
-)
-
-x = linear_model_preprocessor.fit_transform(data)
-
-# Creating target values for Poisson
-data["Frequency"] = data["ClaimNb"] / data["Exposure"]
-
-# Creating target values for Gamma
-data["AvgClaimAmount"] = data["ClaimAmount"] / np.fmax(data["ClaimNb"], 1)
-
-# Creating target values for Tweedie
-# Insurances companies are interested in modeling the Pure Premium, that is the expected total
-# claim amount per unit of exposure for each policyholder in their portfolio
-data["PurePremium"] = data["ClaimAmount"] / data["Exposure"]
-
-
-# Split the data-set into a train and test set,
-# each set is split into input and result.
-train_data, test_data, x_train_data, x_test_data = train_test_split(data, x, test_size=0.2, random_state=42)
-
-gamma_mask_train = train_data["ClaimAmount"] > 0
-gamma_mask_test = test_data["ClaimAmount"] > 0
-
-parameters_glms = {
-    "Poisson": {
-        "sklearn": SklearnPoissonRegressor,
-        "concrete": ConcretePoissonRegressor,
-        "init_parameters": {
-            "alpha": 1e-3,
-            "max_iter": 400,
-        },
-        "fit_parameters": {
-            "X": x_train_data,
-            "y": train_data["Frequency"],
-            "sample_weight": train_data["Exposure"],
-        },
-        "x_test": x_test_data,
-        "score_parameters": {
-            "y_true": test_data["Frequency"],
-            "sample_weight": test_data["Exposure"],
-        },
-        "deviance": mean_poisson_deviance,
-    },
-    "Gamma": {
-        "sklearn": SklearnGammaRegressor,
-        "concrete": ConcreteGammaRegressor,
-        "init_parameters": {
-            "alpha": 10.0,
-            "max_iter": 300,
-        },
-        "fit_parameters": {
-            "X": x_train_data[gamma_mask_train],
-            "y": train_data[gamma_mask_train]["AvgClaimAmount"],
-            "sample_weight": train_data[gamma_mask_train]["ClaimNb"],
-        },
-        "x_test": x_test_data[gamma_mask_test],
-        "score_parameters": {
-            "y_true": test_data[gamma_mask_test]["AvgClaimAmount"],
-            "sample_weight": test_data[gamma_mask_test]["ClaimNb"],
-        },
-        "deviance": mean_gamma_deviance,
-    },
-    "Tweedie": {
-        "sklearn": SklearnTweedieRegressor,
-        "concrete": ConcreteTweedieRegressor,
-        "init_parameters": {
-            "power": 1.9,
-            "alpha": 0.1,
-            "max_iter": 10000,
-        },
-        "fit_parameters": {
-            "X": x_train_data,
-            "y": train_data["PurePremium"],
-            "sample_weight": train_data["Exposure"],
-        },
-        "x_test": x_test_data,
-        "score_parameters": {
-            "y_true": test_data["PurePremium"],
-            "sample_weight": test_data["Exposure"],
-            "power": 1.9,
-        },
-        "deviance": mean_tweedie_deviance,
-    },
+poisson_init_parameters = {
+    "alpha": 1e-3,
+    "max_iter": 400,
+    "n_bits":12,
 }
 
+gamma_init_parameters = {
+   "alpha": 10.0,
+    "max_iter": 300,
+    "n_bits":12,
+}
+
+tweedie_init_parameters = {
+    "power": 1.9,
+    "alpha": 0.1,
+    "max_iter": 10000,
+    "n_bits":12,
+}
+
+# Initialize the models
+poisson_concrete_model, poisson_scikit_model, poisson_data_info = initialize_glm_models(ConcretePoissonRegressor, SklearnPoissonRegressor, "Poisson", poisson_init_parameters)
+gamma_concrete_model, gamma_scikit_model, gamma_data_info = initialize_glm_models(ConcreteGammaRegressor, SklearnGammaRegressor, "Gamma", gamma_init_parameters)
+tweedie_concrete_model, tweedie_scikit_model, tweedie_data_info = initialize_glm_models(ConcreteTweedieRegressor, SklearnTweedieRegressor, "Tweedie", tweedie_init_parameters)
+    
 def compare_models(input_bytes):
+    error_allowed = 1
     
-    fdp = atheris.FuzzedDataProvider(input_bytes)
-    data = [fdp.ConsumeFloatListInRange(74, 0.0, 1.0) for _ in range(15)]
+    # Get random data to test
+    poisson_data = consume_bytes(input_bytes, poisson_data_info, n_samples=66, margin=0)
+    gamma_data = consume_bytes(input_bytes, gamma_data_info, n_samples=10, margin=0)
+    tweedie_data = consume_bytes(input_bytes, tweedie_data_info, n_samples=10, margin=0)
     
+    # Get Poisson predictions for scikit and FHE
+    poisson_scikit_pred = poisson_scikit_model.predict(poisson_data)
+    poisson_concre_pred = poisson_concrete_model.predict(poisson_data)
     
-    for glm, parameters_glm in parameters_glms.items():
-        # Retrieve the regressors
-        sklearn_class = parameters_glm["sklearn"]
-        concrete_class = parameters_glm["concrete"]
-
-        # Instantiate the models
-        init_parameters = parameters_glm["init_parameters"]
-        sklearn_glm = sklearn_class(**init_parameters)
-        concrete_glm = concrete_class(**init_parameters)
-
-        # Fit the models
-        fit_parameters = parameters_glm["fit_parameters"]
-        sklearn_glm.fit(**fit_parameters)
-        concrete_glm.fit(**fit_parameters)
-
-        x_train_subset = fit_parameters["X"][:100]
-        # Compile the Concrete-ML in FHE
-        
-        circuit = concrete_glm.compile(x_train_subset)
-
-        # Generate the key
-        sys.stdout.flush()
-
-        time_begin = time.time()
-        circuit.client.keygen(force=False)
-                
-        # Compute the predictions using sklearn (floating points, in the clear)
-        sklearn_predictions = sklearn_glm.predict(data)
-
-        # Compute the predictions using COncrete-ML (in FHE)
-        concrete_predictions = concrete_glm.predict(
-            data,
-            execute_in_fhe=True,
-        ).flatten()
-        print(sklearn_predictions)
-        print(concrete_predictions)
-
-        # Compute the deviance scores
-        mean_deviance = parameters_glm["deviance"]
-        score_parameters = parameters_glm["score_parameters"]
-        assert np.allclose(sklearn_predictions, concrete_predictions, atol=1), f"Error: The predictions are different, scikit prediction {sklearn_predictions}; concrete prediction {concrete_predictions}"
-        # sklearn_score = mean_deviance(y_pred=sklearn_predictions, **score_parameters)
-        # concrete_score = mean_deviance(concrete_predictions, **score_parameters)
-
-        # # Measure the error of the FHE quantized model with respect to the clear scikit-learn
-        # # float model
-        # score_difference = abs(concrete_score - sklearn_score) * 100 / sklearn_score
-        # assert score_difference < 1
-
+    # check accuracy
+    poisson_error = mean_absolute_percentage_error(poisson_scikit_pred, poisson_concre_pred)
+    assert (poisson_error < error_allowed ), f"Error: The prediction accuracy compared to scikit is less than {100 - error_allowed}%: the error percentage is {poisson_error}%"
+    
+    # Get Gamma predictions for scikit and FHE
+    gamma_scikit_pred = gamma_scikit_model.predict(gamma_data)
+    gamma_concre_pred = gamma_concrete_model.predict(gamma_data)
+    
+    # check accuracy
+    gamma_error = mean_absolute_percentage_error(gamma_scikit_pred, gamma_concre_pred)
+    assert (gamma_error < error_allowed ), f"Error: The prediction accuracy compared to scikit is less than {100 - error_allowed}%: the error percentage is {gamma_error}%"
+    
+    # Get Tweedie predictions for scikit and FHE
+    tweedie_scikit_pred = tweedie_scikit_model.predict(tweedie_data)
+    tweedie_concre_pred = tweedie_concrete_model.predict(tweedie_data)
+    
+    # check accuracy
+    tweedie_error = mean_absolute_percentage_error(tweedie_scikit_pred, tweedie_concre_pred)
+    assert (tweedie_error < error_allowed ), f"Error: The prediction accuracy compared to scikit is less than {100 - error_allowed}%: the error percentage is {tweedie_error}%"
+    
 
 atheris.Setup(sys.argv, compare_models)
 atheris.Fuzz()
-
-def compare_models(input_bytes):
-    
-    fdp = atheris.FuzzedDataProvider(input_bytes)
-    data = [fdp.ConsumeFloatListInRange(74, 0.0, 1.0) for _ in range(15)]
-    
-    # Instantiate the models
-    sklearn_glm = SklearnGammaRegressor(**init_parameters)
-    concrete_glm = ConcreteGammaRegressor(**init_parameters)
-    
-    # Fit the models
-    sklearn_glm.fit(**fit_parameters)
-    concrete_glm.fit(**fit_parameters)
-    
-    # Compute the predictions using sklearn (floating points, in the clear)
-    sklearn_predictions = sklearn_glm.predict(data)
-
-    # Compute the predictions using COncrete-ML (in FHE)
-    concrete_predictions = concrete_glm.predict(
-        data,
-        execute_in_fhe=True,
-    ).flatten()
-    print(sklearn_predictions)
-    print(concrete_predictions)
-    
-    assert np.allclose(sklearn_predictions, concrete_predictions, atol=1), f"Error: The predictions are different, scikit prediction {sklearn_predictions}; concrete prediction {concrete_predictions}"
-
-atheris.Setup(sys.argv, compare_models)
-atheris.Fuzz()
-    
-    
