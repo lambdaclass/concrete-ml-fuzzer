@@ -1,5 +1,4 @@
 import sys
-import numpy
 import atheris
 from concrete.ml.sklearn import LinearRegression
 from utils import initialize_models, mean_absolute_percentage_error, consume_bytes
