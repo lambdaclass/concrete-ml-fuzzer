@@ -16,7 +16,7 @@ Installing concrete-ml with pip will install `scikit-learn`
 
 ```sh
 cd src
-python3 name_of_the_fuzzer.py
+python3 <name_of_the_fuzzer.py>
 ```
 The fuzzer is configured with certain pre-defined values.
 
