@@ -7,6 +7,7 @@ from utils import initialize_models, consume_bytes, mean_absolute_percentage_err
 concrete_model, scikit_model, data_info = initialize_models(c_lsvr)
 
 def compare_models(input_bytes):
+    error_allowed = 1
   
     # Get random data to test
     data = consume_bytes(input_bytes, data_info, n_samples=10, margin=0)
@@ -17,7 +18,8 @@ def compare_models(input_bytes):
     prediction = scikit_model.predict(data)
     
     # Compare both outputs
-    assert (mean_absolute_percentage_error(prediction, fhe_pred) < 1 ), f"Error: The prediction accuracy compared to scikit is less than 95%: is {get_accuracy(prediction, fhe_pred)}%"
+    error = mean_absolute_percentage_error(prediction, fhe_pred)
+    assert (error < error_allowed ), f"Error: The prediction accuracy compared to scikit is less than {100 - error_allowed}%: the error percentage is {error}%"
    
 atheris.Setup(sys.argv, compare_models)
 atheris.Fuzz()
