@@ -33,7 +33,7 @@ def compare_models(input_bytes):
   
     # Get Poisson predictions for scikit and FHE
     scikit_pred = scikit_model.predict(data)
-    concre_pred = concrete_model.predict(data)
+    concre_pred = concrete_model.predict(data, execute_in_fhe=True)
     
     error = mean_absolute_percentage_error(scikit_pred, concre_pred)
     assert (error < error_allowed ), f"Error: The prediction accuracy compared to scikit is less than {100 - error_allowed}%: the error percentage is {error}%"
