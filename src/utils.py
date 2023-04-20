@@ -210,3 +210,28 @@ def initialize_glm_models(concreteModelClass, scikitModelClass, type, params={"n
     
     concrete_model.compile(x_train_data)
     return concrete_model, sklearn_model, data_info
+
+def initialize_neural_models(ModelClass):
+    """
+    Initialize concrete and sklearn models. Automatically load iris or diabetes dataset
+    """
+    print(is_classifier(ModelClass))
+    X, y, data_info = _classification_training() if is_classifier(ModelClass) else _regression_training()
+    y = y.reshape(-1, 1)
+    
+    params = {
+    "module__n_layers": 2,
+    "module__n_a_bits": 3,
+    "module__n_accum_bits": 8,
+    "module__n_outputs": 3,
+    "module__input_dim": X.shape[1],
+    "module__activation_function": nn.Sigmoid,
+    "max_epochs": 100,
+    "verbose": 0,
+    "n_bits":12,
+}
+    
+    model = ModelClass(**params)
+    concrete_model, sklearn_model = model.fit_benchmark(X.astype(np.float32), y.astype(np.float32))
+    concrete_model.compile(X)
+    return concrete_model, sklearn_model, data_info
