@@ -13,7 +13,8 @@ def compare_models(input_bytes):
     prediction = scikit_model.predict(data)
 
     # Get the mean percentage error to make sure the accuaracy is around 99%
-    assert(mean_absolute_percentage_error(prediction, FHE_pred) < 1)
+    error = mean_absolute_percentage_error(prediction, FHE_pred)
+    assert(error < 1) , f"Error: The prediction accuracy compared to scikit is less than 99%: the error percentage is {error}%"
 
 atheris.Setup(sys.argv, compare_models)
 atheris.Fuzz()
