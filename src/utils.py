@@ -13,7 +13,6 @@ from sklearn.preprocessing import (
     StandardScaler,
 )
 
-
 def _classification_training() -> (np.array, np.array, dict):
     """
     Create a classification training set
@@ -21,11 +20,11 @@ def _classification_training() -> (np.array, np.array, dict):
     training_x, training_y = load_iris(return_X_y=True)
     data_info = {
         "dimensions": 4,
-        "min_feature": min(min(minimum) for minimum in training_x),
-        "max_feature": max(max(maximum) for maximum in training_x),
+        "min_feature": np.amin(training_x, axis=0),
+        "max_feature": np.amin(training_x, axis=0),
     }
 
-    return (training_x, training_y, data_info)
+    return (training_x, training_y + 1, data_info)
 
 def _regression_training() -> (np.array, np.array, dict):
     """
@@ -34,8 +33,8 @@ def _regression_training() -> (np.array, np.array, dict):
     training_x, training_y = make_regression(n_samples=100, n_features=5, random_state=42)
     data_info = {
         "dimensions": 5,
-        "min_feature": min(min(minimum) for minimum in training_x),
-        "max_feature": max(max(maximum) for maximum in training_x),
+        "min_feature": np.amin(training_x, axis=0),
+        "max_feature": np.amin(training_x, axis=0),
     }
 
     return (training_x, training_y, data_info)
@@ -134,13 +133,11 @@ def consume_bytes(input_bytes: bytes, data_info, n_samples=1000, margin=0.1) -> 
     margin: margin to expand the dataset range beyond the range of the training set. Recomended to use small values
     """
     fdp = atheris.FuzzedDataProvider(input_bytes)
-    data = [
-            fdp.ConsumeFloatListInRange(
-                data_info["dimensions"], 
-                data_info["min_feature"] - margin, 
-                data_info["max_feature"] + margin
-            ) for _ in range(n_samples)
-           ]
+    data= [
+            [
+                fdp.ConsumeFloatInRange(data_info["min_feature"][i] - margin, data_info["max_feature"][i] + margin) for i in range(data_info["dimensions"])
+            ] for _ in range(n_samples)
+    ]
     return data
 
 def mean_absolute_percentage_error(y_sklearn, y_FHE) -> float:
@@ -151,8 +148,9 @@ def mean_absolute_percentage_error(y_sklearn, y_FHE) -> float:
     
     # Compute accuracy for each possible representation
     score = np.abs((y_sklearn - y_FHE) / y_sklearn)
+    score = score[np.isfinite(score)]
 
-    return np.mean(score)
+    return np.mean(score) if np.any(score) else 0
 
 
 def initialize_models(ModelClass, params={"n_bits":12}):
