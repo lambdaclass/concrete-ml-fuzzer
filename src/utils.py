@@ -25,7 +25,7 @@ def _classification_training() -> (np.array, np.array, dict):
         "max_feature": max(max(maximum) for maximum in training_x),
     }
 
-    return (training_x, training_y, data_info)
+    return (training_x, training_y + 1, data_info)
 
 def _regression_training() -> (np.array, np.array, dict):
     """
