@@ -151,8 +151,9 @@ def mean_absolute_percentage_error(y_sklearn, y_FHE) -> float:
     
     # Compute accuracy for each possible representation
     score = np.abs((y_sklearn - y_FHE) / y_sklearn)
+    score = sorce[np.isfinite(score)]
 
-    return np.mean(score)
+    return np.mean(score) if np.any(score) else 0
 
 
 def initialize_models(ModelClass, params={"n_bits":12}):
