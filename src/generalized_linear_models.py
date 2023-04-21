@@ -43,7 +43,7 @@ def compare_models(input_bytes):
     
     # Get Poisson predictions for scikit and FHE
     poisson_scikit_pred = poisson_scikit_model.predict(poisson_data)
-    poisson_concre_pred = poisson_concrete_model.predict(poisson_data)
+    poisson_concre_pred = poisson_concrete_model.predict(poisson_data, execute_in_fhe=True)
     
     # check accuracy
     poisson_error = mean_absolute_percentage_error(poisson_scikit_pred, poisson_concre_pred)
@@ -51,7 +51,7 @@ def compare_models(input_bytes):
     
     # Get Gamma predictions for scikit and FHE
     gamma_scikit_pred = gamma_scikit_model.predict(gamma_data)
-    gamma_concre_pred = gamma_concrete_model.predict(gamma_data)
+    gamma_concre_pred = gamma_concrete_model.predict(gamma_data, execute_in_fhe=True)
     
     # check accuracy
     gamma_error = mean_absolute_percentage_error(gamma_scikit_pred, gamma_concre_pred)
@@ -59,7 +59,7 @@ def compare_models(input_bytes):
     
     # Get Tweedie predictions for scikit and FHE
     tweedie_scikit_pred = tweedie_scikit_model.predict(tweedie_data)
-    tweedie_concre_pred = tweedie_concrete_model.predict(tweedie_data)
+    tweedie_concre_pred = tweedie_concrete_model.predict(tweedie_data, execute_in_fhe=True)
     
     # check accuracy
     tweedie_error = mean_absolute_percentage_error(tweedie_scikit_pred, tweedie_concre_pred)
