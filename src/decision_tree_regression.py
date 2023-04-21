@@ -28,3 +28,4 @@ def compare_models(input_bytes):
     
 atheris.Setup(sys.argv, compare_models)
 atheris.Fuzz()
+

@@ -211,12 +211,26 @@ def initialize_glm_models(concreteModelClass, scikitModelClass, type, params={"n
     concrete_model.compile(x_train_data)
     return concrete_model, sklearn_model, data_info
 
+
+def _neural_regression_training() -> (np.array, np.array, dict):
+    """
+    Create a regression training set
+    """
+    training_x, training_y = make_regression(n_samples=5, n_features=5, random_state=42)
+    data_info = {
+        "dimensions": 5,
+        "min_feature": min(min(minimum) for minimum in training_x),
+        "max_feature": max(max(maximum) for maximum in training_x),
+    }
+
+    return (training_x, training_y, data_info)
+
 def initialize_neural_models(ModelClass):
     """
     Initialize concrete and sklearn models. Automatically load iris or diabetes dataset
     """
     print(is_classifier(ModelClass))
-    X, y, data_info = _classification_training() if is_classifier(ModelClass) else _regression_training()
+    X, y, data_info = _classification_training() if is_classifier(ModelClass) else _neural_regression_training()
     y = y.reshape(-1, 1)
     
     params = {
@@ -225,13 +239,13 @@ def initialize_neural_models(ModelClass):
     "module__n_accum_bits": 8,
     "module__n_outputs": 3,
     "module__input_dim": X.shape[1],
-    "module__activation_function": nn.Sigmoid,
-    "max_epochs": 100,
+    "max_epochs": 10,
+    "batch_size": 1,
     "verbose": 0,
-    "n_bits":12,
+    "n_bits":8,
 }
     
     model = ModelClass(**params)
     concrete_model, sklearn_model = model.fit_benchmark(X.astype(np.float32), y.astype(np.float32))
-    concrete_model.compile(X)
-    return concrete_model, sklearn_model, data_info
+    fhe_circuit = concrete_model.compile(X)
+    return concrete_model, sklearn_model, data_info, fhe_circuit

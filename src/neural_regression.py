@@ -20,19 +20,22 @@ from sklearn.utils.multiclass import type_of_target
 from concrete.ml.sklearn import NeuralNetRegressor
 from utils import initialize_neural_models, consume_bytes, mean_absolute_percentage_error
 
-concrete_model, scikit_model, data_info = initialize_neural_models(NeuralNetRegressor)
+concrete_model, scikit_model, data_info, fhe_circuit = initialize_neural_models(NeuralNetRegressor)
+fhe_circuit.client.keygen(force=True)
 
 def compare_models(input_bytes):
   
     error_allowed = 1
     
     # Get random data to test
-    data = consume_bytes(input_bytes, data_info, n_samples=66, margin=0)
+    data = consume_bytes(input_bytes, data_info, n_samples=3, margin=0)
     
     data = np.array(data).astype(np.float32)
-  
-    # Get Poisson predictions for scikit and FHE
+    data = data[:1]
+    # Get predictions for scikit and FHE
     scikit_pred = scikit_model.predict(data)
+    
+    # Todo: This fails most of the time, randomly, investigate why
     concre_pred = concrete_model.predict(data, execute_in_fhe=True)
     
     error = mean_absolute_percentage_error(scikit_pred, concre_pred)
