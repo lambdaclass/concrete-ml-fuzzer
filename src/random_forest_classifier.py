@@ -6,7 +6,7 @@ from utils import consume_bytes, mean_absolute_percentage_error, initialize_mode
 concrete_model, sklearn_model, data_info = initialize_models(RandomForestClassifier, {})
 
 def compare_models(input_bytes):
-    data = consume_bytes(input_bytes, data_info, n_samples=100)
+    data = consume_bytes(input_bytes, data_info, n_samples=10)
     # Run the inference, encryption and decryption is done in the background
     fhe_pred = concrete_model.predict(data, execute_in_fhe=True)
     # Get scikit prediction
